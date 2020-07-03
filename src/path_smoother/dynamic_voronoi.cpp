@@ -88,8 +88,10 @@ void DynamicVoronoi::initializeMap(int _sizeX, int _sizeY, bool** _gridMap) {
 
   for (int x=0; x<sizeX; x++) {
     for (int y=0; y<sizeY; y++) {
+       ///if this position is occupied
       if (gridMap[x][y]) {
         dataCell c = data[x][y];
+        ///if the closest obstacle of c is not x,y, means the map changed,need to be updated
         if (!isOccupied(x,y,c)) {
           
           bool isSurrounded = true;
@@ -101,12 +103,14 @@ void DynamicVoronoi::initializeMap(int _sizeX, int _sizeY, bool** _gridMap) {
               int ny = y+dy;
               if (ny<=0 || ny>=sizeY-1) continue;
 
+              ///if one of the neighbour of the point is NOT occupied, the point must be the edge of the obstacle
               if (!gridMap[nx][ny]) {
                 isSurrounded = false;
                 break;
               }
             }
           }
+          ///if the point is surrounded by occupied grids, this point is inside the obstacle
           if (isSurrounded) {
             c.obstX = x;
             c.obstY = y;
@@ -115,13 +119,19 @@ void DynamicVoronoi::initializeMap(int _sizeX, int _sizeY, bool** _gridMap) {
             c.voronoi=occupied;
             c.queueing = fwProcessed;
             data[x][y] = c;
-          } else setObstacle(x,y);
+          }
+          else {
+              ///difference is this method add the point to the addlist
+              ///ready to start the lower operation to update the distance map
+              setObstacle(x, y);
+          }
         }
       }
     }
   }
 }
 
+///update the gridmap and data at the same time
 void DynamicVoronoi::occupyCell(int x, int y) {
   gridMap[x][y] = 1;
   setObstacle(x,y);
@@ -133,10 +143,12 @@ void DynamicVoronoi::clearCell(int x, int y) {
 }
 
 void DynamicVoronoi::setObstacle(int x, int y) {
+    ///if closed obstacle of the cell of x,y  is x,y
   dataCell c = data[x][y];
   if(isOccupied(x,y,c)) {
     return;
   }
+  ///else, set the closest obstacle of the cell x,y to x,y
   addList.push_back(Vec2i(x,y));
   c.obstX = x;
   c.obstY = y;
@@ -179,6 +191,7 @@ void DynamicVoronoi::exchangeObstacles(std::vector<Vec2i> points) {
   }  
 }
 
+///update the distance map
 void DynamicVoronoi::update(bool updateRealDist) {
   commitAndColorize(updateRealDist);
 
@@ -290,6 +303,7 @@ bool DynamicVoronoi::isVoronoi( int x, int y ) {
   return (c.voronoi==free || c.voronoi==voronoiKeep);
 }
 
+///add the points which are goint to be updated into open queue
 void DynamicVoronoi::commitAndColorize(bool updateRealDist) {
   // ADD NEW OBSTACLES
   for (unsigned int i=0; i<addList.size(); i++) {

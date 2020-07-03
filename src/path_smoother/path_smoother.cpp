@@ -28,7 +28,6 @@ void PathSmoother::smoothPath() {
   smoothed_path_ = original_path_;
   float totalWeight = wSmoothness_ + wCurvature_ + wVoronoi_ + wObstacle_;
 
-  //Todo:make sure the cycle end condition
   while (iterations < Constants::max_iterations) {
     for (int i = 1; i < smoothed_path_.size() - 1; ++i) {
       Vec2d xim1(smoothed_path_[i - 1].x(), smoothed_path_[i - 1].y());
@@ -82,6 +81,7 @@ Vec2d PathSmoother::obstacleTerm(Vec2d xi) {
 //    std::cout << "(==) dis to closest obs = " << obsDst << ", Vector Mod = " << obsVct.length() << std::endl;
     // the closest obstacle is closer than desired correct the path for that
     // obsDMax = 2m
+    ///if current distance between xi and closest obstacle is samller than obsDMax_, compute gradient
     if (obsDst < obsDMax_ && obsDst > 1e-6) {
       gradient = wObstacle_ * 2 * (obsDst - obsDMax_) * obsVct / obsDst;
       return gradient;
@@ -139,6 +139,7 @@ Vec2d PathSmoother::curvatureTerm(Vec2d xim1, Vec2d xi, Vec2d xip1) {
     float Dphi = std::acos(Clamp<float>(Dxi.InnerProd(Dxip1) / (absDxi * absDxip1), -1, 1));
     float kappa = Dphi / absDxi;
 
+    ///if the current curvature is okay , just return zero, else, do some computation to get the curvature term
     if (kappa <= kappaMax_) {
       Vec2d zeros;
 //      std::cout << "curvatureTerm is 0 because kappa(" << kappa << ") < kappamax(" << kappaMax << ")" << std::endl;
@@ -180,7 +181,7 @@ Vec2d PathSmoother::curvatureTerm(Vec2d xim1, Vec2d xi, Vec2d xip1) {
 }
 
 Vec2d PathSmoother::smoothnessTerm(Vec2d xim, Vec2d xi, Vec2d xip) {
-  // according to paper "Practical search techniques in path planning for autonomous driving"
+  /// according to paper "Practical search techniques in path planning for autonomous driving"
   return wSmoothness_ * (-4) * (xip - 2*xi + xim);
 }
 
